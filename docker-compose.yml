@@ -1,3 +1,20 @@
 # TODO
 services:
-  
+  pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aidreamsstudio
+      POSTGRES_PASSWORD: aidreamsstudio
+      POSTGRES_DB: aidreamsstudio
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-aidreamsstudio:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webhook"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pg-aidreamsstudio:
