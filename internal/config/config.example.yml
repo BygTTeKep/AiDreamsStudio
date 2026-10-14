@@ -1,0 +1,8 @@
+database:
+  dsn:
+
+redis:
+  addr: ""
+  port: 
+app:
+  port: 3000
