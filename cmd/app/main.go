@@ -11,12 +11,25 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/BygTTeKep/AiDreamsStudio/docs"
+
+	_ "github.com/BygTTeKep/AiDreamsStudio"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/auth"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/config"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/database"
+	"github.com/BygTTeKep/AiDreamsStudio/internal/projects"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title           Video Service API
+// @version         1.0
+// @host            localhost:3000
+// @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -42,6 +55,12 @@ func main() {
 	authHandler := auth.NewHandler(authService, router)
 	authHandler.RegisterRouters()
 
+	// Projects модуль
+	projectRepo := projects.NewRepository(db)
+	projectService := projects.NewService(projectRepo)
+	projectHandler := projects.NewHandler(projectService, router)
+	projectHandler.RegisterRouters(jwt.Middleware())
+
 	srv := &http.Server{
 		Addr:           ":" + strconv.Itoa(cfg.App.Port),
 		Handler:        router,
@@ -49,6 +68,8 @@ func main() {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
