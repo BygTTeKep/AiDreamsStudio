@@ -15,16 +15,22 @@ type AppConfig struct {
 	Port int `mapstructure:"port"`
 }
 
+type JWTConfig struct {
+	SecretKey    string `mapstructure:"secret_key"`
+	ExpiresHours int    `mapstructure:"expires_hours"`
+}
+
 type Config struct {
 	DB  DatabaseConfig `mapstructure:"database"`
 	App AppConfig      `mapstructure:"app"`
 	Rdb RedisConfig    `mapstructure:"redis"`
+	JWT JWTConfig      `mapstructure:"jwt"`
 }
 
 func Load() (*Config, error) {
 	v := viper.New()
 
-	v.AddConfigPath(".")
+	v.AddConfigPath("../../internal/config/")
 	v.SetConfigName("config")
 	v.SetConfigType("yml")
 

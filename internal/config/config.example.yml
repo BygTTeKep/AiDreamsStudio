@@ -1,8 +1,10 @@
 database:
-  dsn:
+  dsn: ""
 
 redis:
   addr: ""
   port: 
 app:
   port: 3000
+jwt:
+  secret_key: ""
