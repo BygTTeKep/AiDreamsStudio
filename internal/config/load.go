@@ -20,11 +20,17 @@ type JWTConfig struct {
 	ExpiresHours int    `mapstructure:"expires_hours"`
 }
 
+type StorageConfig struct {
+	Type string `mapstructure:"type"`
+	URL  string `mapstructure:"url"`
+}
+
 type Config struct {
-	DB  DatabaseConfig `mapstructure:"database"`
-	App AppConfig      `mapstructure:"app"`
-	Rdb RedisConfig    `mapstructure:"redis"`
-	JWT JWTConfig      `mapstructure:"jwt"`
+	DB      DatabaseConfig `mapstructure:"database"`
+	App     AppConfig      `mapstructure:"app"`
+	Rdb     RedisConfig    `mapstructure:"redis"`
+	JWT     JWTConfig      `mapstructure:"jwt"`
+	Storage StorageConfig  `mapstructure:"storage"`
 }
 
 func Load() (*Config, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/BygTTeKep/AiDreamsStudio/internal/auth"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/config"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/database"
+	"github.com/BygTTeKep/AiDreamsStudio/internal/images"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/projects"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -60,6 +61,18 @@ func main() {
 	projectService := projects.NewService(projectRepo)
 	projectHandler := projects.NewHandler(projectService, router)
 	projectHandler.RegisterRouters(jwt.Middleware())
+
+	//Images модуль
+	imageRepo := images.NewRepository(db)
+	imageStore, err := images.NewStorage(cfg.Storage.URL)
+	if err != nil {
+		slog.Error("image store", "error", err)
+		os.Exit(1)
+	}
+
+	imageService := images.NewService(imageStore, imageRepo)
+	imageHandler := images.NewHandler(imageService, router)
+	imageHandler.RegisterRouters(jwt.Middleware())
 
 	srv := &http.Server{
 		Addr:           ":" + strconv.Itoa(cfg.App.Port),
