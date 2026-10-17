@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"time"
+
+	"github.com/spf13/viper"
+)
 
 type DatabaseConfig struct {
 	Dsn string `mapstructure:"dsn"`
@@ -25,12 +29,23 @@ type StorageConfig struct {
 	URL  string `mapstructure:"url"`
 }
 
+type ClaudeConfig struct {
+	APIKey    string        `mapstructure:"api_key"` // пусто — берётся ANTHROPIC_API_KEY
+	Model     string        `mapstructure:"model"`
+	MaxTokens int64         `mapstructure:"max_tokens"`
+	Effort    string        `mapstructure:"effort"`
+	Workers   int           `mapstructure:"workers"`
+	QueueSize int           `mapstructure:"queue_size"`
+	Timeout   time.Duration `mapstructure:"timeout"`
+}
+
 type Config struct {
 	DB      DatabaseConfig `mapstructure:"database"`
 	App     AppConfig      `mapstructure:"app"`
 	Rdb     RedisConfig    `mapstructure:"redis"`
 	JWT     JWTConfig      `mapstructure:"jwt"`
 	Storage StorageConfig  `mapstructure:"storage"`
+	Claude  ClaudeConfig   `mapstructure:"claude"`
 }
 
 func Load() (*Config, error) {

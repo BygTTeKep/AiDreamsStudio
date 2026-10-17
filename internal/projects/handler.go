@@ -11,18 +11,16 @@ import (
 
 type Handler struct {
 	service *Service
-	router  *gin.Engine
 }
 
-func NewHandler(service *Service, router *gin.Engine) *Handler {
+func NewHandler(service *Service) *Handler {
 	return &Handler{
 		service: service,
-		router:  router,
 	}
 }
 
-func (h *Handler) RegisterRouters(authMW gin.HandlerFunc) {
-	g := h.router.Group("/projects", authMW)
+func (h *Handler) RegisterRouters(rg *gin.RouterGroup, authMW gin.HandlerFunc) {
+	g := rg.Group("/projects", authMW)
 	g.POST("/create", h.create)
 	g.GET("/:id", h.getByID)
 	g.POST("/search", h.search)
