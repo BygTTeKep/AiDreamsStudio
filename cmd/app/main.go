@@ -17,8 +17,10 @@ import (
 	"github.com/BygTTeKep/AiDreamsStudio/internal/auth"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/config"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/database"
+	"github.com/BygTTeKep/AiDreamsStudio/internal/generation/claude"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/images"
 	"github.com/BygTTeKep/AiDreamsStudio/internal/projects"
+	"github.com/BygTTeKep/AiDreamsStudio/internal/scenario"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -57,10 +59,13 @@ func main() {
 	authHandler.RegisterRouters()
 
 	// Projects модуль
+	projectsGroup := router.Group("/projects", jwt.Middleware())
+	projectGroup := projectsGroup.Group("/:projectId")
+
 	projectRepo := projects.NewRepository(db)
 	projectService := projects.NewService(projectRepo)
-	projectHandler := projects.NewHandler(projectService, router)
-	projectHandler.RegisterRouters(jwt.Middleware())
+	projectHandler := projects.NewHandler(projectService)
+	projectHandler.RegisterRouters(projectsGroup, jwt.Middleware())
 
 	//Images модуль
 	imageRepo := images.NewRepository(db)
@@ -71,8 +76,31 @@ func main() {
 	}
 
 	imageService := images.NewService(imageStore, imageRepo)
-	imageHandler := images.NewHandler(imageService, router)
-	imageHandler.RegisterRouters(jwt.Middleware())
+	imageHandler := images.NewHandler(imageService)
+	imageHandler.RegisterRouters(projectGroup, jwt.Middleware())
+
+	//Scenario
+	claudeClient := claude.NewClient(claude.Config{
+		APIKey:    cfg.Claude.APIKey,
+		Model:     cfg.Claude.Model,
+		MaxTokens: cfg.Claude.MaxTokens,
+		Effort:    cfg.Claude.Effort,
+	})
+	scenarioWorker := claude.NewWorker(claudeClient, nil, claude.WorkerConfig{
+		Workers:   cfg.Claude.Workers,
+		QueueSize: cfg.Claude.QueueSize,
+		Timeout:   cfg.Claude.Timeout,
+	})
+
+	scenarioRepo := scenario.NewRepository(db)
+	scenarioService := scenario.NewService(scenarioRepo, scenarioWorker, imageService)
+	scenarioWorker.SetSaver(scenarioService)
+	// воркер живёт дольше ctx запроса, поэтому получает свой контекст и останавливается после HTTP-сервера
+	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	defer cancelWorker()
+	scenarioWorker.Start(workerCtx)
+	scenarioHanler := scenario.NewHandler(scenarioService)
+	scenarioHanler.RegisterRouters(projectGroup, jwt.Middleware())
 
 	srv := &http.Server{
 		Addr:           ":" + strconv.Itoa(cfg.App.Port),
@@ -97,4 +125,11 @@ func main() {
 	if err := srv.Shutdown(ctxShutdown); err != nil {
 		slog.Error("server shutdown", "error", err)
 	}
+
+	// дожидаемся задач, уже взятых в работу; по таймауту — отменяем их
+	go func() {
+		<-ctxShutdown.Done()
+		cancelWorker()
+	}()
+	scenarioWorker.Stop()
 }

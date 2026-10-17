@@ -8,3 +8,12 @@ app:
   port: 3000
 jwt:
   secret_key: ""
+
+claude:
+  api_key: "" # пусто — используется переменная окружения ANTHROPIC_API_KEY
+  model: "claude-opus-5-5"
+  max_tokens: 16000
+  effort: "high"
+  workers: 4
+  queue_size: 100
+  timeout: 5m
